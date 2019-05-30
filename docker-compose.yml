@@ -1,0 +1,56 @@
+version: '3.2'
+volumes:
+  postgres-data:
+  redis-data:
+  bundle-cache:
+services:
+  web:
+    container_name: cthdb_web
+    image: cthdb/api
+    environment:
+    - RAILS_ENV=development
+    - EDITOR=vim
+    - THOR_MERGE=vim
+    ports:
+    - "3021:3000"
+    depends_on:
+    - db
+    - redis
+    - sidekiq
+    volumes:
+    - .:/app
+    - bundle-cache:/bundle
+    stdin_open: true
+    tty: true
+  sidekiq:
+    build:
+      context: .
+      dockerfile: ./config/docker/dev/Dockerfile
+    container_name: cthdb_sidekiq
+    image: cthdb/api
+    command: bundle exec sidekiq
+    environment:
+      - RAILS_ENV=development
+      - EDITOR=vim
+    ports:
+      - "3121:3000"
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+      - bundle-cache:/bundle
+  db:
+    container_name: cthdb_db
+    image: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5485:5432"
+  redis:
+    container_name: cthdb_redis
+    image: redis
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6383:6379"
